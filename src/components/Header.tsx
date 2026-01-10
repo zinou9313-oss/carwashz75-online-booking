@@ -1,4 +1,4 @@
-import { Droplets, Phone, MapPin, Clock, Menu, X } from "lucide-react";
+import { Droplets, Phone, MapPin, Clock, Menu, X, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -103,6 +103,15 @@ const Header = () => {
       {/* Contact Bar */}
       <div className="hidden lg:block bg-primary/90 py-2">
         <div className="container mx-auto px-4 flex items-center justify-center gap-8 text-sm text-primary-foreground/90">
+          <a 
+            href="https://wa.me/33605533984" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>WhatsApp</span>
+          </a>
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4" />
             <span>06 05 53 39 84</span>
