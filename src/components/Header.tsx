@@ -105,11 +105,11 @@ const Header = () => {
         <div className="container mx-auto px-4 flex items-center justify-center gap-8 text-sm text-primary-foreground/90">
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4" />
-            <span>01 23 45 67 89</span>
+            <span>06 05 53 39 84</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
-            <span>75 Avenue des Champs-Élysées, Paris 75008</span>
+            <span>Paris IDF</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
