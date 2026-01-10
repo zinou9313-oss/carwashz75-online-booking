@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, CheckCircle } from "lucide-react";
+import { CalendarIcon, CheckCircle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const timeSlots = [
   "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
@@ -26,6 +27,7 @@ const services = [
 const ReservationSection = () => {
   const [date, setDate] = useState<Date>();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -33,10 +35,11 @@ const ReservationSection = () => {
     service: "",
     time: "",
     vehicleType: "",
+    message: "",
   });
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.phone || !formData.service || !date || !formData.time) {
@@ -48,12 +51,36 @@ const ReservationSection = () => {
       return;
     }
 
-    // Simulate form submission
-    setIsSubmitted(true);
-    toast({
-      title: "Réservation confirmée ! ✨",
-      description: `Rendez-vous le ${format(date, "d MMMM yyyy", { locale: fr })} à ${formData.time}`,
-    });
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.from("reservations").insert({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        service: formData.service,
+        date: format(date, "yyyy-MM-dd"),
+        time: formData.time,
+        message: formData.vehicleType ? `Type de véhicule: ${formData.vehicleType}` : null,
+      });
+
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      toast({
+        title: "Réservation confirmée ! ✨",
+        description: `Rendez-vous le ${format(date, "d MMMM yyyy", { locale: fr })} à ${formData.time}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue. Veuillez réessayer.",
+        variant: "destructive",
+      });
+      console.error("Reservation error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isSubmitted) {
@@ -74,9 +101,21 @@ const ReservationSection = () => {
                 <strong>{formData.time}</strong>.
               </p>
               <p className="text-muted-foreground mb-8">
-                Un email de confirmation a été envoyé à <strong>{formData.email}</strong>.
+                Nous vous contacterons au <strong>{formData.phone}</strong> pour confirmer.
               </p>
-              <Button variant="outline" onClick={() => setIsSubmitted(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsSubmitted(false);
+                setFormData({
+                  name: "",
+                  email: "",
+                  phone: "",
+                  service: "",
+                  time: "",
+                  vehicleType: "",
+                  message: "",
+                });
+                setDate(undefined);
+              }}>
                 Faire une nouvelle réservation
               </Button>
             </CardContent>
@@ -126,6 +165,7 @@ const ReservationSection = () => {
                     placeholder="Jean Dupont"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -138,6 +178,7 @@ const ReservationSection = () => {
                     placeholder="jean@exemple.fr"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -150,6 +191,7 @@ const ReservationSection = () => {
                     placeholder="06 12 34 56 78"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -159,6 +201,7 @@ const ReservationSection = () => {
                   <Select
                     value={formData.vehicleType}
                     onValueChange={(value) => setFormData({ ...formData, vehicleType: value })}
+                    disabled={isLoading}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionnez" />
@@ -178,6 +221,7 @@ const ReservationSection = () => {
                   <Select
                     value={formData.service}
                     onValueChange={(value) => setFormData({ ...formData, service: value })}
+                    disabled={isLoading}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Choisissez une formule" />
@@ -200,6 +244,7 @@ const ReservationSection = () => {
                       <Button
                         variant="outline"
                         className="w-full justify-start text-left font-normal h-12"
+                        disabled={isLoading}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {date ? format(date, "d MMMM yyyy", { locale: fr }) : "Choisir une date"}
@@ -229,6 +274,7 @@ const ReservationSection = () => {
                         size="sm"
                         onClick={() => setFormData({ ...formData, time: slot })}
                         className="text-sm"
+                        disabled={isLoading}
                       >
                         {slot}
                       </Button>
@@ -237,8 +283,15 @@ const ReservationSection = () => {
                 </div>
               </div>
 
-              <Button type="submit" variant="hero" size="lg" className="w-full">
-                Confirmer la réservation
+              <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Envoi en cours...
+                  </>
+                ) : (
+                  "Confirmer la réservation"
+                )}
               </Button>
             </form>
           </CardContent>
